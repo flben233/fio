@@ -1,19 +1,14 @@
-//go:build linux && s390x
-// +build linux,s390x
+//go:build freebsd && !amd64
+// +build freebsd,!amd64
 
 package fio
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
-
-//go:embed bin/fio-linux-s390x
-var binFiles embed.FS
 
 // GetFIO 返回适用于当前系统的 fio 命令字符串（带不带 sudo）和临时文件路径（用于清理）
 func GetFIO() (fioCmd string, tempFile string, err error) {
@@ -36,39 +31,6 @@ func GetFIO() (fioCmd string, tempFile string, err error) {
 		}
 	} else {
 		errors = append(errors, fmt.Sprintf("无法找到 fio: %v", lookErr))
-	}
-	// 2. 创建临时目录
-	tempDir, tempErr := os.MkdirTemp("", "fioWrapper")
-	if tempErr != nil {
-		return "", "", fmt.Errorf("创建临时目录失败: %v", tempErr)
-	}
-	// 3. 尝试使用嵌入的 fio 版本
-	binName := "fio-linux-s390x"
-	binPath := filepath.Join("bin", binName)
-	fileContent, readErr := binFiles.ReadFile(binPath)
-	if readErr == nil {
-		tempFile = filepath.Join(tempDir, binName)
-		writeErr := os.WriteFile(tempFile, fileContent, 0755)
-		if writeErr == nil {
-			// 尝试 sudo 嵌入版本
-			testCmd := exec.Command("sudo", tempFile, "--help")
-			if runErr := testCmd.Run(); runErr == nil {
-				return fmt.Sprintf("sudo %s", tempFile), tempFile, nil
-			} else {
-				errors = append(errors, fmt.Sprintf("sudo %s 运行失败: %v", tempFile, runErr))
-			}
-			// 直接尝试嵌入版本
-			testCmd = exec.Command(tempFile, "--help")
-			if runErr := testCmd.Run(); runErr == nil {
-				return tempFile, tempFile, nil
-			} else {
-				errors = append(errors, fmt.Sprintf("%s 运行失败: %v", tempFile, runErr))
-			}
-		} else {
-			errors = append(errors, fmt.Sprintf("写入临时文件失败 (%s): %v", tempFile, writeErr))
-		}
-	} else {
-		errors = append(errors, fmt.Sprintf("读取嵌入的 fio 二进制文件失败: %v", readErr))
 	}
 	// 返回所有错误信息
 	return "", "", fmt.Errorf("无法找到可用的 fio 命令:\n%s", strings.Join(errors, "\n"))
