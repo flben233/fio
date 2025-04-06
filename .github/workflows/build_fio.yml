@@ -100,11 +100,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libaio-dev zlib1g-dev liburing-dev
-          
           # 安装交叉编译工具链
           if [[ "${{ matrix.target }}" != "linux-amd64" ]]; then
             echo "Installing cross-compilation toolchains for ${{ matrix.target }}"
-            
             if [[ "${{ matrix.target }}" == "linux-386" ]]; then
               sudo apt-get install -y gcc-multilib
             elif [[ "${{ matrix.target }}" == "linux-arm64" ]]; then
@@ -145,7 +143,7 @@ jobs:
         if: matrix.target == 'linux-amd64'
         run: |
           cd fio-src
-          ./configure
+          CFLAGS="-O2 -march=x86-64 -mtune=generic" ./configure --disable-native
           make -j$(nproc) LDFLAGS="-static"
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
         continue-on-error: true
@@ -163,7 +161,7 @@ jobs:
         if: matrix.target == 'linux-arm64'
         run: |
           cd fio-src
-          CC=aarch64-linux-gnu-gcc ./configure
+          CC=aarch64-linux-gnu-gcc CFLAGS="-O2" ./configure --disable-native
           make -j$(nproc) LDFLAGS="-static"
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}
         continue-on-error: true
@@ -172,7 +170,7 @@ jobs:
         if: matrix.target == 'linux-armv7'
         run: |
           cd fio-src
-          CC=arm-linux-gnueabihf-gcc ./configure
+          CC=arm-linux-gnueabihf-gcc CFLAGS="-O2" ./configure --disable-native
           make -j$(nproc) LDFLAGS="-static"
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}v${{ matrix.goarm }}
         continue-on-error: true
@@ -198,8 +196,7 @@ jobs:
           elif [[ "${{ matrix.target }}" == "linux-ppc64le" ]]; then
             CROSS_CC=powerpc64le-linux-gnu-gcc
           fi
-          
-          CC=${CROSS_CC} ./configure
+          CC=${CROSS_CC} ./configure --disable-native
           make -j$(nproc) LDFLAGS="-static"
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}
         continue-on-error: true
@@ -208,7 +205,7 @@ jobs:
         if: startsWith(matrix.target, 'darwin-')
         run: |
           cd fio-src
-          ./configure
+          ./configure --disable-native
           make -j$(sysctl -n hw.ncpu)
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}
         continue-on-error: true
