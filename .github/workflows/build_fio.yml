@@ -130,7 +130,6 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install coreutils
-          brew install libaio || true  # 忽略错误，因为macOS可能不支持libaio
 
       - name: Download and extract FIO source
         run: |
@@ -205,7 +204,7 @@ jobs:
         if: startsWith(matrix.target, 'darwin-')
         run: |
           cd fio-src
-          ./configure --disable-native
+          ./configure --disable-native --without-libaio
           make -j$(sysctl -n hw.ncpu)
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}
         continue-on-error: true
