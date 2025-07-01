@@ -15,7 +15,7 @@ func GetFIO() (fioCmd string, tempFile string, err error) {
 	var errors []string
 	// 1. 尝试系统自带 fio
 	if path, lookErr := exec.LookPath("fio"); lookErr == nil {
-		if !hasRootPermission() {
+		if hasRootPermission() {
 			// 尝试 sudo fio
 			testCmd := exec.Command("sudo", path, "--help")
 			if runErr := testCmd.Run(); runErr == nil {
