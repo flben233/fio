@@ -204,7 +204,7 @@ jobs:
         if: startsWith(matrix.target, 'darwin-')
         run: |
           cd fio-src
-          ./configure --disable-native --without-libaio
+          ./configure --disable-native
           make -j$(sysctl -n hw.ncpu)
           cp fio ../bin/fio-${{ matrix.goos }}-${{ matrix.goarch }}
         continue-on-error: true
