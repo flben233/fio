@@ -20,15 +20,17 @@ func GetFIO() (fioCmd string, tempFile string, err error) {
 	var errors []string
 	// 1. 尝试系统自带 fio
 	if path, lookErr := exec.LookPath("fio"); lookErr == nil {
-		// 尝试 sudo fio
-		testCmd := exec.Command("sudo", path, "--help")
-		if runErr := testCmd.Run(); runErr == nil {
-			return "sudo fio", "", nil
-		} else {
-			errors = append(errors, fmt.Sprintf("sudo fio 测试失败: %v", runErr))
+		if !hasRootPermission() {
+			// 尝试 sudo fio
+			testCmd := exec.Command("sudo", path, "--help")
+			if runErr := testCmd.Run(); runErr == nil {
+				return "sudo fio", "", nil
+			} else {
+				errors = append(errors, fmt.Sprintf("sudo fio 测试失败: %v", runErr))
+			}
 		}
 		// 直接尝试 fio
-		testCmd = exec.Command(path, "--help")
+		testCmd := exec.Command(path, "--help")
 		if runErr := testCmd.Run(); runErr == nil {
 			return "fio", "", nil
 		} else {
@@ -50,15 +52,17 @@ func GetFIO() (fioCmd string, tempFile string, err error) {
 		tempFile = filepath.Join(tempDir, binName)
 		writeErr := os.WriteFile(tempFile, fileContent, 0755)
 		if writeErr == nil {
-			// 尝试 sudo 嵌入版本
-			testCmd := exec.Command("sudo", tempFile, "--help")
-			if runErr := testCmd.Run(); runErr == nil {
-				return fmt.Sprintf("sudo %s", tempFile), tempFile, nil
-			} else {
-				errors = append(errors, fmt.Sprintf("sudo %s 运行失败: %v", tempFile, runErr))
+			if !hasRootPermission() {
+				// 尝试 sudo 嵌入版本
+				testCmd := exec.Command("sudo", tempFile, "--help")
+				if runErr := testCmd.Run(); runErr == nil {
+					return fmt.Sprintf("sudo %s", tempFile), tempFile, nil
+				} else {
+					errors = append(errors, fmt.Sprintf("sudo %s 运行失败: %v", tempFile, runErr))
+				}
 			}
 			// 直接尝试嵌入版本
-			testCmd = exec.Command(tempFile, "--help")
+			testCmd := exec.Command(tempFile, "--help")
 			if runErr := testCmd.Run(); runErr == nil {
 				return tempFile, tempFile, nil
 			} else {

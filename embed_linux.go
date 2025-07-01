@@ -15,15 +15,17 @@ func GetFIO() (fioCmd string, tempFile string, err error) {
 	var errors []string
 	// 1. 尝试系统自带 fio
 	if path, lookErr := exec.LookPath("fio"); lookErr == nil {
-		// 尝试 sudo fio
-		testCmd := exec.Command("sudo", path, "--help")
-		if runErr := testCmd.Run(); runErr == nil {
-			return "sudo fio", "", nil
-		} else {
-			errors = append(errors, fmt.Sprintf("sudo fio 测试失败: %v", runErr))
+		if !hasRootPermission() {
+			// 尝试 sudo fio
+			testCmd := exec.Command("sudo", path, "--help")
+			if runErr := testCmd.Run(); runErr == nil {
+				return "sudo fio", "", nil
+			} else {
+				errors = append(errors, fmt.Sprintf("sudo fio 测试失败: %v", runErr))
+			}
 		}
 		// 直接尝试 fio
-		testCmd = exec.Command(path, "--help")
+		testCmd := exec.Command(path, "--help")
 		if runErr := testCmd.Run(); runErr == nil {
 			return "fio", "", nil
 		} else {
